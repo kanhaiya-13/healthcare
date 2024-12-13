@@ -1,0 +1,92 @@
+-- Create Hospitals Table
+CREATE TABLE Hospitals (
+    hospital_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    location TEXT NOT NULL,
+    contact_number VARCHAR(15),
+    email VARCHAR(100) UNIQUE,
+    specializations_offered TEXT,
+    total_beds INT,
+    available_beds INT,
+    hospital_type ENUM('General', 'Specialty', 'Multispecialty') NOT NULL
+);
+
+-- Create Doctors Table
+CREATE TABLE Doctors (
+    doctor_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    specialization VARCHAR(50) NOT NULL,
+    qualification VARCHAR(100),
+    experience_years INT CHECK (experience_years >= 0),
+    contact_number VARCHAR(15),
+    email VARCHAR(100) UNIQUE,
+    hospital_id INT,
+    availability VARCHAR(50),
+    consultation_fee DECIMAL(10, 2),
+    rating DECIMAL(3, 2) CHECK (rating BETWEEN 0 AND 5),
+    FOREIGN KEY (hospital_id) REFERENCES Hospitals(hospital_id)
+);
+
+
+CREATE TABLE Patients (
+    patient_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    age INT CHECK (age >= 0),
+    gender ENUM('Male', 'Female', 'Other') NOT NULL,
+    contact_number VARCHAR(15),
+    email VARCHAR(100) UNIQUE,
+    address TEXT,
+    medical_history TEXT,
+    current_medication TEXT,
+    doctor_id INT,
+    hospital_id INT,
+    FOREIGN KEY (doctor_id) REFERENCES Doctors(doctor_id),
+    FOREIGN KEY (hospital_id) REFERENCES Hospitals(hospital_id)
+);
+
+CREATE TABLE Appointments (
+    appointment_id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT NOT NULL,
+    doctor_id INT NOT NULL,
+    hospital_id INT,
+    date_time DATETIME NOT NULL,
+    status ENUM('Scheduled', 'Completed', 'Cancelled') DEFAULT 'Scheduled',
+    notes TEXT,
+    FOREIGN KEY (patient_id) REFERENCES Patients(patient_id),
+    FOREIGN KEY (doctor_id) REFERENCES Doctors(doctor_id),
+    FOREIGN KEY (hospital_id) REFERENCES Hospitals(hospital_id)
+);
+
+CREATE TABLE Prescriptions (
+    prescription_id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT NOT NULL,
+    doctor_id INT NOT NULL,
+    prescribed_medicines TEXT NOT NULL,
+    dosage_instructions TEXT,
+    created_date DATE DEFAULT CURRENT_DATE,
+    FOREIGN KEY (patient_id) REFERENCES Patients(patient_id),
+    FOREIGN KEY (doctor_id) REFERENCES Doctors(doctor_id)
+);
+
+
+CREATE TABLE Feedback (
+    feedback_id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT NOT NULL,
+    doctor_id INT NOT NULL,
+    rating DECIMAL(3, 2) CHECK (rating BETWEEN 1 AND 5),
+    comments TEXT,
+    date_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (patient_id) REFERENCES Patients(patient_id),
+    FOREIGN KEY (doctor_id) REFERENCES Doctors(doctor_id)
+);
+
+
+CREATE TABLE Billing (
+    bill_id INT AUTO_INCREMENT PRIMARY KEY,
+    appointment_id INT NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    payment_status ENUM('Paid', 'Pending') DEFAULT 'Pending',
+    payment_date DATE,
+    payment_mode ENUM('Cash', 'Card', 'Online'),
+    FOREIGN KEY (appointment_id) REFERENCES Appointments(appointment_id)
+);
