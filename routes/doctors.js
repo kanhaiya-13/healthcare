@@ -1,7 +1,30 @@
 const express = require("express");
 const router = express.Router();
 const connection = require("../db"); // Import database connection
+const jwt = require("jsonwebtoken"); // Add this import
 
+// JWT Secret - Ensure this matches the secret in your login route
+const JWT_SECRET = "hii_there_2";
+
+// Middleware to verify JWT token
+const verifyToken = (req, res, next) => {
+  const token = req.headers["authorization"]?.split(" ")[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(403).json({ message: "No token provided" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Unauthorized or token expired" });
+  }
+};
+
+// Apply verifyToken middleware to all routes
+router.use(verifyToken);
 // GET all doctors
 router.get("/", (req, res) => {
   connection.query("SELECT * FROM Doctors", (err, results) => {

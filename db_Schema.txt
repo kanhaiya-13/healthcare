@@ -90,3 +90,117 @@ CREATE TABLE Billing (
     payment_mode ENUM('Cash', 'Card', 'Online'),
     FOREIGN KEY (appointment_id) REFERENCES Appointments(appointment_id)
 );
+
+CREATE TABLE DoctorHospitals (
+    doctor_id INT,
+    hospital_id INT,
+    day_of_week VARCHAR(20),      -- Specific day
+    start_time TIME,               -- Precise start time
+    end_time TIME,                 -- Precise end time
+    PRIMARY KEY (doctor_id, hospital_id, day_of_week),
+    FOREIGN KEY (doctor_id) REFERENCES Doctors(doctor_id),
+    FOREIGN KEY (hospital_id) REFERENCES Hospitals(hospital_id)
+);
+
+-- Easy to find all hospitals for a doctor
+SELECT h.hospital_name, 
+       dh.day_of_week, 
+       TIME_FORMAT(dh.start_time, '%h:%i %p') AS start_time,
+       TIME_FORMAT(dh.end_time, '%h:%i %p') AS end_time
+FROM doctors d
+JOIN doctorHospitals dh ON d.doctor_id = dh.doctor_id
+JOIN hospitals h ON dh.hospital_id = h.hospital_id
+WHERE d.doctor_id = 1;
+
+-- Easy to find all doctors in a specific hospital (atually this is not the exact way)
+SELECT d.name, h.hospital_name
+FROM Doctors d
+JOIN DoctorHospitals dh ON d.doctor_id = dh.doctor_id
+JOIN Hospitals h ON dh.hospital_id = h.hospital_id
+WHERE h.hospital_id = 101;
+
+-- Prescription Table
+CREATE TABLE Prescriptions (
+    prescription_id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT,
+    doctor_id INT,
+    hospital_id INT,
+    prescription_date DATE NOT NULL,
+    
+    -- Patient Specific Details
+    patient_name VARCHAR(100),
+    patient_age INT,
+    patient_gender ENUM('Male', 'Female', 'Other'),
+    patient_contact VARCHAR(15),
+    
+    -- Medical Examination Details
+    bp_reading VARCHAR(20),
+    pulse_rate INT,
+    weight DECIMAL(5,2),
+    spo2 DECIMAL(5,2),
+    
+    -- Clinical Details
+    diagnosis TEXT,
+    system_examination TEXT,
+    patient_complaints TEXT,
+    
+    -- Doctor Details
+    referring_doctor VARCHAR(100),
+    prescribing_doctor_name VARCHAR(100),
+    doctor_qualifications TEXT,
+    doctor_registration_number VARCHAR(50),
+    
+    -- Additional Medical Notes
+    notes TEXT,
+    follow_up_date DATE,
+    
+    FOREIGN KEY (patient_id) REFERENCES Patients(patient_id),
+    FOREIGN KEY (doctor_id) REFERENCES Doctors(doctor_id),
+    FOREIGN KEY (hospital_id) REFERENCES Hospitals(hospital_id)
+);
+
+-- Medication Details Table (Separate Table for Medications)
+CREATE TABLE Prescription_Medications (
+    prescription_medication_id INT AUTO_INCREMENT PRIMARY KEY,
+    prescription_id INT,
+    medicine_name VARCHAR(100),
+    composition TEXT,
+    dosage VARCHAR(100),
+    timing VARCHAR(100),
+    
+    FOREIGN KEY (prescription_id) REFERENCES Prescriptions(prescription_id)
+);
+
+-- Advice Table
+CREATE TABLE Prescription_Advice (
+    prescription_advice_id INT AUTO_INCREMENT PRIMARY KEY,
+    prescription_id INT,
+    advice_details TEXT,
+    
+    FOREIGN KEY (prescription_id) REFERENCES Prescriptions(prescription_id)
+);
+
+-- Insert Prescription
+INSERT INTO Prescriptions 
+(patient_id, doctor_id, hospital_id, prescription_date, 
+ patient_name, patient_age, patient_gender, patient_contact,
+ bp_reading, pulse_rate, weight, spo2,
+ diagnosis, system_examination, patient_complaints,
+ referring_doctor, prescribing_doctor_name, doctor_qualifications, 
+ doctor_registration_number, notes, follow_up_date)
+VALUES 
+(/* patient details from the document */);
+
+-- Insert Medications
+INSERT INTO Prescription_Medications 
+(prescription_id, medicine_name, composition, dosage, timing)
+VALUES 
+(LAST_INSERT_ID(), 'NAPRAD 500MG TABLET', 'DOMPERIDONE 10 MG + NAPROXEN 500 MG', '1-HR qIG, 1-Id', ''),
+(LAST_INSERT_ID(), 'TAYOTOTAL TABLET', 'AMITRIPTYLINE 25 MG', '1-R GIG', ''),
+(LAST_INSERT_ID(), 'AMITONE 25MG TABLET', 'ALCIUM CARBONATE 1250MG + VITAMIN D3 2000IU + METHYLCOBALAMIN1500MCG', '1-Id-a qI', '');
+
+-- Insert Advice
+INSERT INTO Prescription_Advice
+(prescription_id, advice_details)
+VALUES 
+(LAST_INSERT_ID(), 'WALKING AT NORMAL PACE X 30 MINS PER DAY');

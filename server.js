@@ -7,11 +7,15 @@ const appointmentRoutes = require("./routes/appointments");
 const prescriptionRoutes = require("./routes/prescription");
 const feedbackRoutes = require("./routes/feedback");
 const billingRoutes = require("./routes/billing");
+const doctorLogin = require("./routes/doctorLogin");
+const cors = require("cors");
 
 const app = express();
 app.use(express.json()); // Parse JSON bodies
+app.use(cors());
 
 // Use individual routes
+app.use("/doctorLogin", doctorLogin);
 app.use("/doctors", doctorsRoutes);
 app.use("/hospitals", hospitalsRoutes);
 app.use("/patients", patientRoutes);
