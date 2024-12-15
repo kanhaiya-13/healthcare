@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken"); // Make sure to install jsonwebtoken packag
 const verifyToken = require("./verifyToken");
 
 // Secret key for JWT - Store this in environment variables in a real application
-const JWT_SECRET = "hii_there_2";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // User Login Route
 router.post("/doctorlogin", (req, res) => {
