@@ -1,5 +1,4 @@
 const express = require("express");
-const connection = require("./db"); // MySQL connection
 const doctorsRoutes = require("./routes/doctors"); // Doctors CRUD routes
 const hospitalsRoutes = require("./routes/hospitals");
 const patientRoutes = require("./routes/patients");
