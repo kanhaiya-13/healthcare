@@ -27,5 +27,5 @@ organizes route handlers for CRUD operations across various entities, including 
 
 1. Clone the repository:  
    ```bash  
-   git clone <repository-url>  
+   git clone https://github.com/kanhaiya-13/healthcare  
    cd healthcare-backend  
