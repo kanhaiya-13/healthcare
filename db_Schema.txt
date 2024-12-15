@@ -204,3 +204,38 @@ INSERT INTO Prescription_Advice
 (prescription_id, advice_details)
 VALUES 
 (LAST_INSERT_ID(), 'WALKING AT NORMAL PACE X 30 MINS PER DAY');
+
+CREATE TABLE receptionists (
+    receptionist_id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    contact_number VARCHAR(15) NOT NULL,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(100) NOT NULL,
+    hospital_id INT,
+    doctor_id INT,
+    shift_timing VARCHAR(50),
+    
+    FOREIGN KEY (hospital_id) REFERENCES hospitals(hospital_id),
+    FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id)
+);
+
+CREATE TABLE Appointments (
+    appointment_id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT,
+    hospital_id INT,
+    doctor_id INT,
+    receptionist_id INT,
+    appointment_date DATE,
+    appointment_time TIME,
+    status ENUM('Scheduled', 'Completed', 'Cancelled', 'Rescheduled') DEFAULT 'Scheduled',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id),
+    FOREIGN KEY (hospital_id) REFERENCES hospitals(hospital_id),
+    FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id),
+    FOREIGN KEY (receptionist_id) REFERENCES receptionists(receptionist_id)
+);
