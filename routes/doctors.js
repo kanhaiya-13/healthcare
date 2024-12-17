@@ -7,10 +7,11 @@ const verifyToken = require("./verifyToken");
 // JWT Secret - Ensure this matches the secret in your login route
 
 // Apply verifyToken middleware to all routes
-router.use(verifyToken);
+// router.use(verifyToken);
+
 // GET all doctors
 router.get("/", (req, res) => {
-  connection.query("SELECT * FROM Doctors", (err, results) => {
+  connection.query("SELECT * FROM doctors", (err, results) => {
     if (err) {
       res.status(500).json({ error: err.message });
     } else {
