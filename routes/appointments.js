@@ -1,7 +1,7 @@
 const express = require("express");
-const mysql = require("mysql2");
 const router = express.Router();
 const connection = require("../db");
+const mysql = require("mysql2/promise");
 
 // CREATE - Add a new appointment
 router.post("/create", async (req, res) => {
@@ -17,26 +17,31 @@ router.post("/create", async (req, res) => {
       notes,
     } = req.body;
 
-    const [result] = await connection.execute(
-      `INSERT INTO appointments 
-            (patient_id, hospital_id, doctor_id, receptionist_id, 
-            appointment_date, appointment_time, status, notes) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        patient_id,
-        hospital_id,
-        doctor_id,
-        receptionist_id,
-        appointment_date,
-        appointment_time,
-        status || "Scheduled",
-        notes,
-      ]
-    );
+    const query = `INSERT INTO appointments
+            (patient_id, hospital_id, doctor_id, receptionist_id,
+            appointment_date, appointment_time, status, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    res.status(201).json({
-      message: "Appointment created successfully",
-      appointmentId: result.insertId,
+    const value = [
+      patient_id,
+      hospital_id,
+      doctor_id,
+      receptionist_id,
+      appointment_date,
+      appointment_time,
+      status,
+      notes,
+    ];
+    connection.query(query, value, (error, result) => {
+      if (error) {
+        res.json({
+          error: error.message,
+        });
+      }
+      res.status(201).json({
+        message: "Appointment created successfully",
+        appointmentId: result.insertId,
+      });
     });
   } catch (error) {
     console.error("Error creating appointment:", error);
@@ -50,21 +55,30 @@ router.post("/create", async (req, res) => {
 // READ - Get all appointments
 router.get("/", async (req, res) => {
   try {
-    const [appointments] = await connection.execute(`
-            SELECT 
-                a.*,
-                p.patient_name,
-                h.hospital_name,
-                d.doctor_name,
-                r.receptionist_name
-            FROM Appointments a
-            LEFT JOIN patients p ON a.patient_id = p.patient_id
-            LEFT JOIN hospitals h ON a.hospital_id = h.hospital_id
-            LEFT JOIN doctors d ON a.doctor_id = d.doctor_id
-            LEFT JOIN receptionists r ON a.receptionist_id = r.receptionist_id
-        `);
-
-    res.json(appointments);
+    // const appointments = await connection.execute(`
+    //         SELECT a.*,
+    //                p.name as patient_name,
+    //                d.name as doctor_name
+    //         FROM Appointments a
+    //         JOIN patients p ON a.patient_id = p.patient_id
+    //         JOIN doctors d ON a.doctor_id = d.doctor_id
+    //         WHERE 1=1
+    //     `);
+    // res.json(appointments);
+    const query = `SELECT a.*,
+                    p.name as patient_name,
+                    d.name as doctor_name
+             FROM Appointments a
+             JOIN patients p ON a.patient_id = p.patient_id
+             JOIN doctors d ON a.doctor_id = d.doctor_id
+             WHERE 1=1`;
+    connection.query(query, (error, result) => {
+      if (error) {
+        res.json(error);
+      } else {
+        res.json(result);
+      }
+    });
   } catch (error) {
     console.error("Error fetching appointments:", error);
     res.status(500).json({
@@ -79,12 +93,12 @@ router.get("/:id", async (req, res) => {
   try {
     const [appointments] = await connection.execute(
       `
-            SELECT 
+            SELECT
                 a.*,
-                p.patient_name,
-                h.hospital_name,
-                d.doctor_name,
-                r.receptionist_name
+                p.name,
+                h.name,
+                d.name,
+                r.name
             FROM Appointments a
             LEFT JOIN patients p ON a.patient_id = p.patient_id
             LEFT JOIN hospitals h ON a.hospital_id = h.hospital_id
@@ -124,15 +138,15 @@ router.put("/:id", async (req, res) => {
     } = req.body;
 
     const [result] = await connection.execute(
-      `UPDATE Appointments 
-            SET 
-                patient_id = ?, 
-                hospital_id = ?, 
-                doctor_id = ?, 
+      `UPDATE Appointments
+            SET
+                patient_id = ?,
+                hospital_id = ?,
+                doctor_id = ?,
                 receptionist_id = ?,
-                appointment_date = ?, 
-                appointment_time = ?, 
-                status = ?, 
+                appointment_date = ?,
+                appointment_time = ?,
+                status = ?,
                 notes = ?
             WHERE appointment_id = ?`,
       [
@@ -196,7 +210,7 @@ router.patch("/:id/status", async (req, res) => {
     const { status } = req.body;
 
     const [result] = await connection.execute(
-      `UPDATE Appointments 
+      `UPDATE Appointments
             SET status = ?
             WHERE appointment_id = ?`,
       [status, req.params.id]
