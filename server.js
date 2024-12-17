@@ -8,6 +8,8 @@ const feedbackRoutes = require("./routes/feedback");
 const billingRoutes = require("./routes/billing");
 const login = require("./routes/login");
 const cors = require("cors");
+const usersRoutes = require("./routes/users");
+const receptionistRoutes = require("./routes/receptionists");
 
 const app = express();
 app.use(express.json()); // Parse JSON bodies
@@ -22,11 +24,13 @@ app.use("/appointments", appointmentRoutes);
 app.use("/prescription", prescriptionRoutes);
 app.use("/feedback", feedbackRoutes);
 app.use("/billing", billingRoutes);
+app.use("/users", usersRoutes);
+app.use("/receptionists", receptionistRoutes);
 
 // Start the server
 const PORT = 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on http://172.16.244.170:${PORT}`);
 });
 
 module.exports = app;
