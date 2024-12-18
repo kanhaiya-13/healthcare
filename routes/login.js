@@ -3,154 +3,218 @@ const router = express.Router();
 const connection = require("../db"); // Import database connection
 const jwt = require("jsonwebtoken"); // Make sure to install jsonwebtoken package
 const verifyToken = require("./verifyToken");
+const bcrypt = require("bcrypt");
 
 // Secret key for JWT - Store this in environment variables in a real application
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// User Login Route
-router.post("/doctorlogin", (req, res) => {
+// User Login
+router.post("/", (req, res) => {
   const { email, password } = req.body;
 
-  // Validate input
-  if (!email || !password) {
-    return res.status(400).json({ message: "Email and password are required" });
-  }
+  connection.query(
+    "SELECT * FROM Users WHERE email = ?",
+    [email],
+    async (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
 
-  // Query to find user by email and password (INSECURE - for temporary use only)
-  const query = "SELECT * FROM doctors WHERE email = ? AND password = ?";
+      if (results.length === 0) {
+        return res.status(400).json({ message: "Invalid credentials" });
+      }
 
-  connection.query(query, [email, password], (err, results) => {
-    if (err) {
-      console.error("Detailed Database Error:", err);
-      return res.status(500).json({
-        error: "Database error occurred",
-        details: err.message,
-        sqlMessage: err.sqlMessage,
-        sqlState: err.sqlState,
+      const user = results[0];
+      // Compare passwords
+      const isMatch = await bcrypt.compare(password, user.password);
+
+      if (!isMatch) {
+        return res.status(400).json({ message: "Invalid credentials" });
+      }
+
+      //jwt token generation
+
+      const token = jwt.sign(
+        {
+          user_id: user.user_id,
+          email: user.email,
+          role: user.role,
+        },
+        JWT_SECRET,
+        { expiresIn: "24h" }
+      );
+
+      const userId = user.user_id; // Replace with actual user ID from DB
+      const role = user.role; // Replace with user role from DB
+
+      // Store userId and role in the session
+      // req.session.userId = userId;
+      // req.session.role = role;
+      // Update last login
+      connection.query(
+        "UPDATE Users SET last_login = CURRENT_TIMESTAMP WHERE user_id = ?",
+        [user.user_id],
+        (updateErr) => {
+          if (updateErr) {
+            console.error("Failed to update last login:", updateErr);
+          }
+        }
+      );
+
+      res.status(200).json({
+        message: "Login successful",
+        token: token,
+        user_id: user.user_id,
+        role: user.role,
       });
     }
-
-    // Check if user exists
-    if (results.length === 0) {
-      return res.status(401).json({ message: "Invalid email or password" });
-    }
-
-    const user = results[0];
-
-    // Generate JWT token
-    const token = jwt.sign(
-      {
-        user_id: user.user_id,
-        email: user.email,
-        role: user.role,
-      },
-      JWT_SECRET,
-      { expiresIn: "24h" }
-    );
-
-    // Remove sensitive information before sending response
-    const { password: omit, ...userWithoutPassword } = user;
-
-    // Respond with token and user info
-    res.status(200).json({
-      message: "Login successful",
-      token: token,
-      user: userWithoutPassword,
-    });
-  });
+  );
 });
 
-router.post("/receptionistlogin", (req, res) => {
-  const { email, password } = req.body;
+// // User Login Route
+// router.post("/", (req, res) => {
+//   const { email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ message: "Email and password are required" });
-  }
+//   // Validate input
+//   if (!email || !password) {
+//     return res.status(400).json({ message: "Email and password are required" });
+//   }
 
-  const query = "SELECT * FROM receptionists WHERE email = ? AND password = ?";
+//   // Query to find user by email and password (INSECURE - for temporary use only)
+//   const query = "SELECT * FROM users WHERE email = ? AND password = ?";
 
-  connection.query(query, [email, password], (err, results) => {
-    if (err) {
-      console.error("Detailed Database Error:", err);
-      return res.status(500).json({
-        error: "Database error occurred",
-        details: err.message,
-        sqlMessage: err.sqlMessage,
-        sqlState: err.sqlState,
-      });
-    }
+//   connection.query(query, [email, password], (err, results) => {
+//     if (err) {
+//       console.error("Detailed Database Error:", err);
+//       return res.status(500).json({
+//         error: "Database error occurred",
+//         details: err.message,
+//         sqlMessage: err.sqlMessage,
+//         sqlState: err.sqlState,
+//       });
+//     }
 
-    if (results.length === 0) {
-      return res.status(401).json({ message: "Invalid email or password" });
-    }
+//     // Check if user exists
+//     if (results.length === 0) {
+//       return res.status(401).json({ message: "Invalid email or password" });
+//     }
 
-    const user = results[0];
+//     const user = results[0];
 
-    const token = jwt.sign(
-      {
-        user_id: user.user_id,
-        email: user.email,
-        role: user.role,
-      },
-      JWT_SECRET,
-      { expiresIn: "24h" }
-    );
+//     // Generate JWT token
+//     const token = jwt.sign(
+//       {
+//         user_id: user.user_id,
+//         email: user.email,
+//         role: user.role,
+//       },
+//       JWT_SECRET,
+//       { expiresIn: "24h" }
+//     );
 
-    const { password: omit, ...userWithoutPassword } = user;
+//     // Remove sensitive information before sending response
+//     const { password: omit, ...userWithoutPassword } = user;
 
-    res.status(200).json({
-      message: "Login successful",
-      token: token,
-      user: userWithoutPassword,
-    });
-  });
-});
+//     // Respond with token and user info
+//     res.status(200).json({
+//       message: "Login successful",
+//       token: token,
+//       user: userWithoutPassword,
+//     });
+//   });
+// });
 
-router.post("/patientlogin", (req, res) => {
-  const { email, password } = req.body;
+// router.post("/receptionistlogin", (req, res) => {
+//   const { email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ message: "Email and password are required" });
-  }
+//   if (!email || !password) {
+//     return res.status(400).json({ message: "Email and password are required" });
+//   }
 
-  const query = "SELECT * FROM patients WHERE email = ? AND password = ?";
+//   const query = "SELECT * FROM receptionists WHERE email = ? AND password = ?";
 
-  connection.query(query, [email, password], (err, results) => {
-    if (err) {
-      console.error("Detailed Database Error:", err);
-      return res.status(500).json({
-        error: "Database error occurred",
-        details: err.message,
-        sqlMessage: err.sqlMessage,
-        sqlState: err.sqlState,
-      });
-    }
+//   connection.query(query, [email, password], (err, results) => {
+//     if (err) {
+//       console.error("Detailed Database Error:", err);
+//       return res.status(500).json({
+//         error: "Database error occurred",
+//         details: err.message,
+//         sqlMessage: err.sqlMessage,
+//         sqlState: err.sqlState,
+//       });
+//     }
 
-    if (results.length === 0) {
-      return res.status(401).json({ message: "Invalid email or password" });
-    }
+//     if (results.length === 0) {
+//       return res.status(401).json({ message: "Invalid email or password" });
+//     }
 
-    const user = results[0];
+//     const user = results[0];
 
-    const token = jwt.sign(
-      {
-        user_id: user.user_id,
-        email: user.email,
-        role: user.role,
-      },
-      JWT_SECRET,
-      { expiresIn: "24h" }
-    );
+//     const token = jwt.sign(
+//       {
+//         user_id: user.user_id,
+//         email: user.email,
+//         role: user.role,
+//       },
+//       JWT_SECRET,
+//       { expiresIn: "24h" }
+//     );
 
-    const { password: omit, ...userWithoutPassword } = user;
+//     const { password: omit, ...userWithoutPassword } = user;
 
-    res.status(200).json({
-      message: "Login successful",
-      token: token,
-      user: userWithoutPassword,
-    });
-  });
-});
+//     res.status(200).json({
+//       message: "Login successful",
+//       token: token,
+//       user: userWithoutPassword,
+//     });
+//   });
+// });
+
+// router.post("/patientlogin", (req, res) => {
+//   const { email, password } = req.body;
+
+//   if (!email || !password) {
+//     return res.status(400).json({ message: "Email and password are required" });
+//   }
+
+//   const query = "SELECT * FROM patients WHERE email = ? AND password = ?";
+
+//   connection.query(query, [email, password], (err, results) => {
+//     if (err) {
+//       console.error("Detailed Database Error:", err);
+//       return res.status(500).json({
+//         error: "Database error occurred",
+//         details: err.message,
+//         sqlMessage: err.sqlMessage,
+//         sqlState: err.sqlState,
+//       });
+//     }
+
+//     if (results.length === 0) {
+//       return res.status(401).json({ message: "Invalid email or password" });
+//     }
+
+//     const user = results[0];
+
+//     const token = jwt.sign(
+//       {
+//         user_id: user.user_id,
+//         email: user.email,
+//         role: user.role,
+//       },
+//       JWT_SECRET,
+//       { expiresIn: "24h" }
+//     );
+
+//     const { password: omit, ...userWithoutPassword } = user;
+
+//     res.status(200).json({
+//       message: "Login successful",
+//       token: token,
+//       user: userWithoutPassword,
+//     });
+//   });
+// });
 
 // // Example protected route using the verification middleware
 // router.get("/protected", verifyToken, (req, res) => {
