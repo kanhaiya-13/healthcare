@@ -2,11 +2,9 @@ const express = require("express");
 const router = express.Router();
 const connection = require("../db"); // Import database connection
 const jwt = require("jsonwebtoken"); // Make sure to install jsonwebtoken package
-const verifyToken = require("./verifyToken");
 const bcrypt = require("bcrypt");
 
 // Secret key for JWT - Store this in environment variables in a real application
-const JWT_SECRET = process.env.JWT_SECRET;
 
 // User Login
 router.post("/", (req, res) => {
@@ -32,24 +30,21 @@ router.post("/", (req, res) => {
         return res.status(400).json({ message: "Invalid credentials" });
       }
 
+      req.session.user = {
+        id: user.user_id,
+        role: user.role,
+      };
       //jwt token generation
 
       const token = jwt.sign(
         {
           user_id: user.user_id,
-          email: user.email,
           role: user.role,
         },
-        JWT_SECRET,
+        "kanu",
         { expiresIn: "24h" }
       );
 
-      const userId = user.user_id; // Replace with actual user ID from DB
-      const role = user.role; // Replace with user role from DB
-
-      // Store userId and role in the session
-      // req.session.userId = userId;
-      // req.session.role = role;
       // Update last login
       connection.query(
         "UPDATE Users SET last_login = CURRENT_TIMESTAMP WHERE user_id = ?",
@@ -60,7 +55,16 @@ router.post("/", (req, res) => {
           }
         }
       );
-
+      res.cookie("user_id", user.user_id, {
+        httpOnly: true,
+        secure: true,
+        maxAge: 3600000,
+      });
+      res.cookie("role", user.role, {
+        httpOnly: true,
+        secure: true,
+        maxAge: 3600000,
+      });
       res.status(200).json({
         message: "Login successful",
         token: token,
@@ -70,7 +74,16 @@ router.post("/", (req, res) => {
     }
   );
 });
+module.exports = router;
 
+router.delete("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.send("Error logging out.");
+    }
+    res.send("Logged out successfully.");
+  });
+});
 // // User Login Route
 // router.post("/", (req, res) => {
 //   const { email, password } = req.body;
@@ -223,5 +236,3 @@ router.post("/", (req, res) => {
 //     user: req.user,
 //   });
 // });
-
-module.exports = router;
