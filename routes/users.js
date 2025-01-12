@@ -69,6 +69,9 @@ router.post("/create", async (req, res) => {
           if (err) {
             res.status(500).json({ error: err.message });
           } else {
+            const roleSpecificQuery = `INSERT INTO ${role}s (email, user_id) VALUES (?, ?)`;
+            const _values = [email, results.insertId];
+            connection.query(roleSpecificQuery, _values, (err, results) => {});
             res.status(201).json({
               message: "User added successfully",
               user_id: results.insertId,
@@ -152,6 +155,7 @@ router.post("/login", (req, res) => {
       connection.query(
         "UPDATE Users SET last_login = CURRENT_TIMESTAMP WHERE user_id = ?",
         [user.user_id],
+
         (updateErr) => {
           if (updateErr) {
             console.error("Failed to update last login:", updateErr);
